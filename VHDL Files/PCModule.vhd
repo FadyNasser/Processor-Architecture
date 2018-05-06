@@ -5,7 +5,7 @@ entity PCModule is
 port( 	Interrupt, Reset, Clk, PCSrc, CallSel, PCFreeze, PCWrite : in std_logic;
 	RdstVal, WriteData : in std_logic_vector(15 downto 0);
 	Flush_IfId : out std_logic;
-	Instruction : out std_logic_vector (15 downto 0));
+	Instruction, PC : out std_logic_vector (15 downto 0));
 end PCModule;
 
 Architecture PCModule_Arch of PCModule is
@@ -24,11 +24,11 @@ port(A, B : in std_logic_vector(n-1 downto 0); Cin : in std_logic; F : out std_l
 end component FA;
 
 
-	signal PC, NewPC, Instr : std_logic_vector(15 downto 0);
+	signal PCSig, NewPCSig, Instr : std_logic_vector(15 downto 0);
 	signal IsInterrupt, IsReset, FA_Cout, Flush : std_logic;
 Begin	
-	InstrMem: Memory port map(Clk, '0', x"0000", Instr, PC(9 downto 0));
-	PC_Adder: FA generic map(n => 16) port map(x"0000", PC, '1', NewPC, FA_Cout);
+	InstrMem: Memory port map(Clk, '0', x"0000", Instr, PCSig(9 downto 0));
+	PCSig_Adder: FA generic map(n => 16) port map(x"0000", PCSig, '1', NewPCSig, FA_Cout);
 
 	process(Clk, Reset, Interrupt)
 	begin
@@ -38,32 +38,44 @@ Begin
 
 		if Reset = '1' then
 			PC <= x"0000";
+			PCSig <= x"0000";
 			IsReset <= '1';
 		elsif IsReset = '1' then
 			PC <= Instr;
+			PCSig <= Instr;
+			
 			IsReset <= '0';
 			Flush <= '1';
 
 		elsif Interrupt = '1' then
-			PC <= x"0001";
+			if rising_edge(Clk) then
+				PC <= PCSig;
+			end if;
+			PCSig <= x"0001";
 			IsInterrupt <= '1';
-		elsif IsInterrupt = '1' then
+		elsif IsInterrupt = '1' then 
 			PC <= Instr;
+			PCSig <= Instr;
 			IsInterrupt <= '0';
 			Flush <= '1';
 		else
 			if rising_edge(Clk) and PCFreeze = '0' then
 				if PCWrite = '1' then
 					PC <= WriteData;
+					PCSig <= WriteData;
 				else
 					if CallSel = '0' then
 						if PCSrc = '0' then
-							PC <= NewPC;
+							PC <= NewPCSig;
+							PCSig <= NewPCSig;
+							
 						else
 							PC <= RdstVal;
+							PCSig <= RdstVal;							
 						end if;
 					else
 						PC <= RdstVal;
+						PCSig <= RdstVal;
 					end if;
 				end if;
 			end if;
