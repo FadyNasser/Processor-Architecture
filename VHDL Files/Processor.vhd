@@ -100,13 +100,14 @@ End Component SPModule;
 
 --IF/ID Signals :-
 -------------------
+signal Int : std_logic;					-- 47
 signal Op : std_logic_vector(4 downto 0); 		-- 46:42 
 signal Imm : std_logic_vector(15 downto 0); 		-- 41:26
 signal Shift : std_logic_vector(3 downto 0);		-- 25:22
 signal Rdst : std_logic_vector(2 downto 0); 		-- 21:19
 signal Rsrc : std_logic_vector(2 downto 0); 		-- 18:16
 signal Pc : std_logic_vector(15 downto 0); 		-- 15:0
-signal IF_ID : std_logic_vector(46 downto 0); 		-- 47 bits
+signal IF_ID : std_logic_vector(47 downto 0); 		-- 48 bits
 
 
 --ID/EX Signals :-
@@ -175,7 +176,7 @@ signal Mem_WB :std_logic_vector(38 downto 0);		-- 39 bits
 --4)Registers Signals :-
 ---------------------
 signal R1_En, R2_En, R3_En ,R4_En: std_logic;
-signal R1_In, R1_Out : std_logic_vector(46 downto 0);
+signal R1_In, R1_Out : std_logic_vector(47 downto 0);
 signal R2_In, R2_Out : std_logic_vector(128 downto 0);
 signal R3_In, R3_Out : std_logic_vector(74 downto 0);
 signal R4_In, R4_Out : std_logic_vector(38 downto 0);
@@ -219,8 +220,7 @@ R4_En <= '1';
 
 Pc_Module : PCModule port map(Interrupt, Reset, Clk, PCSrc, CallSel, PCFreeze, PCWrite ,RdstVal, WriteData, Flush_IfId, Instruction);
 
-
-
+Int <= Interrupt;
 Op <= Instruction(15 downto 11);
 Imm <= Imm(15 downto 0);
 Shift <= Instruction(3 downto 0);
@@ -235,9 +235,9 @@ Pc <= Pc(15 downto 0);
 -------------------------------------------------------------------------------------------------------------
 --IF/ID Reg :-
 ---------------
-IF_ID <= Op(4 downto 0) & Imm(15 downto 0) & Shift(3 downto 0) & Rdst(2 downto 0) & Rsrc(2 downto 0) & Pc(15 downto 0);
+IF_ID <= Int & Op(4 downto 0) & Imm(15 downto 0) & Shift(3 downto 0) & Rdst(2 downto 0) & Rsrc(2 downto 0) & Pc(15 downto 0);
 R1_In <= IF_ID;
-R1: my_DFF generic map(n => 47) port map(Clk, Reset, R1_En, R1_In, R1_Out);
+R1: my_DFF generic map(n => 48) port map(Clk, Reset, R1_En, R1_In, R1_Out);
 -------------------------------------------------------------------------------------------------------------
 --2)Decode :-
 --------------
