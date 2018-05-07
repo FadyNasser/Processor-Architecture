@@ -33,6 +33,12 @@ Cout, JC, Zero, JZ, Neg, JN, JMP : in std_logic;
 RstC, RstZ, RstN, PCSrc : out std_logic);
 End Component BranchModule;
 
+Component entityCCR is
+port( Clk, RST, WriteCCR, SETC, CLRC, CoutAlu, ZeroAlu, NegAlu, OverflowAlu: in std_logic;
+CoutTempCCR, ZeroTempCCR, NegTempCCR, OvervlowTempCCR: in std_logic;
+Cout, Zero, Neg, Overflow: out std_logic);
+end Component entityCCR;
+
 Component CU is
 Port(
 OPCode	: in std_logic_vector(4 downto 0);
@@ -52,6 +58,10 @@ generic (n: integer := 8);
 port(A, B : in std_logic_vector(n-1 downto 0); Cin : in std_logic; F : out std_logic_vector(n-1 downto 0); Cout : out std_logic);
 end Component FA;
 
+Component FA_OneBit is
+port(A, B, Cin : in std_logic; F : out std_logic; Cout : out std_logic);
+end Component FA_OneBit;
+
 Component HDU is
 port( 	IdEx_MemRead : in std_logic;
 	IfId_Rdst, IdEx_Rdst : in std_logic_vector (2 downto 0);
@@ -70,8 +80,23 @@ Component PCModule is
 port( 	Interrupt, Reset, Clk, PCSrc, CallSel, PCFreeze, PCWrite : in std_logic;
 	RdstVal, WriteData : in std_logic_vector(15 downto 0);
 	Flush_IfId : out std_logic;
-	Instruction : out std_logic_vector (15 downto 0));
+	Instruction, PC : out std_logic_vector (15 downto 0));
 end Component PCModule;
+
+Component entityPort is
+port( Clk, PortWrite: in std_logic;
+RegValueIn: in std_logic_vector(15 downto 0);
+RegValueOut: out std_logic_vector(15 downto 0);
+inPort: in std_logic_vector(15 downto 0);
+outPort: out std_logic_vector(15 downto 0));
+end Component entityPort;
+
+Component my_DFF is
+Generic ( n : integer := 16);
+port( Clk,Rst, En : in std_logic;
+d : in std_logic_vector(n-1 downto 0);
+q : out std_logic_vector(n-1 downto 0));
+end component my_DFF;
 
 Component Registers is
 port( Clk, Rst, RegWrite : in std_logic;
@@ -79,13 +104,6 @@ Write_Reg, Reg_1, Reg_2 : in std_logic_vector (2 downto 0);
 Data_1, Data_2 : out std_logic_vector (15 downto 0);
 Write_Data : in std_logic_vector(15 downto 0));
 end Component Registers;
-
-Component my_DFF is
-Generic ( n : integer := 16);
-port( Clk,Rst, En : in std_logic;
-d : in std_logic_vector(n-1 downto 0);
-q : out std_logic_vector(n-1 downto 0));
-end component;
 
 Component SPModule is
 Port(
@@ -190,6 +208,7 @@ signal PCSrc, PCFreeze : std_logic;
 signal RdstVal, WriteData : std_logic_vector(15 downto 0);
 signal Flush_IfId : std_logic;
 signal Instruction : std_logic_vector (15 downto 0);
+signal PC_Out : std_logic_vector (15 downto 0);
 
 --b)Decode Signals :- 
 ----------------------
@@ -223,17 +242,17 @@ R4_En <= '1';
 --1)Fetch :-
 -------------
 
-Pc_Module : PCModule port map(Interrupt, Reset, Clk, PCSrc, CallSel, PCFreeze, PCWrite ,RdstVal, WriteData, Flush_IfId, Instruction);
+PC_Module : PCModule port map(Interrupt, Reset, Clk, PCSrc, CallSel, PCFreeze, PCWrite ,RdstVal, WriteData, Flush_IfId, Instruction,PC_Out);
 
 Op <= Instruction(15 downto 11);
 Rsrc <= Instruction(10 downto 8);
 Rdst <= Instruction(7 downto 5);
 Shift <= Instruction(3 downto 0);
 Int <= Interrupt;
+Pc <= PC_Out;
 --Imm <= ;
---Pc <= ;
 
-----------------------------------------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------------------
 --IF/ID Reg :-
 ---------------
 IF_ID <= Int & Op(4 downto 0) & Imm(15 downto 0) & Shift(3 downto 0) & Rdst(2 downto 0) & Rsrc(2 downto 0) & Pc(15 downto 0);
