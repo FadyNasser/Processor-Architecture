@@ -82,7 +82,7 @@ Component PCModule is
 port( 	Interrupt, Reset, Clk, PCSrc, CallSel, PCFreeze, PCWrite : in std_logic;
 	RdstVal, WriteData : in std_logic_vector(15 downto 0);
 	Flush_IfId : out std_logic;
-	Instruction, PC : out std_logic_vector (15 downto 0));
+	Instruction, PC, Imm : out std_logic_vector (15 downto 0));
 end Component PCModule;
 
 Component entityPort is
@@ -109,9 +109,8 @@ end Component Registers;
 
 Component SPModule is
 Port(
-MemWrite, SPSel: in std_logic;
-OldSP : in std_logic_vector(15 downto 0);
-NewSP, PipeSP : out std_logic_vector(15 downto 0));
+Clk, Reset, MemWrite, SPSel: in std_logic;
+PipeSP : out std_logic_vector(15 downto 0));
 End Component SPModule;
 
 ----------------------------------------------------------------------------------------------------------------------------------
@@ -206,7 +205,6 @@ signal PCSrc, PCFreeze : std_logic;
 signal RdstVal, WriteData : std_logic_vector(15 downto 0);
 signal Flush_IfId : std_logic;
 signal Instruction : std_logic_vector (15 downto 0);
-signal PC_Out : std_logic_vector (15 downto 0);
 
 --b)Decode Signals :- 
 ----------------------
@@ -214,7 +212,6 @@ signal Reg_En : std_logic;
 signal ReadImm : std_logic;
 signal Flush : std_logic;
 signal Flushing : std_logic;
-signal StackPointer : std_logic_vector(15 downto 0);
 
 --c)Execute Signals :- 
 -----------------------
@@ -260,14 +257,13 @@ Reg_En <= '1';
 --1)Fetch :-
 -------------
 
-PC_Module : PCModule port map(Interrupt, Reset, Clk, PCSrc, CallSel, PCFreeze, PCWrite ,RdstVal, WriteData, Flush_IfId, Instruction,PC_Out);
+PC_Module : PCModule port map(Interrupt, Reset, Clk, PCSrc, CallSel, PCFreeze, PCWrite ,RdstVal, WriteData, Flush_IfId, Instruction, Pc, Imm);
 
 Op <= Instruction(15 downto 11);
 Rsrc <= Instruction(10 downto 8);
 Rdst <= Instruction(7 downto 5);
 Shift <= Instruction(3 downto 0);
 Int <= Interrupt;
-Pc <= PC_Out;
 
 -----------------------------------------------------------------------------------------------------------------------------------
 --IF/ID Reg :-
@@ -296,7 +292,7 @@ Flushing <= ReadImm or PCSrc or Flush;
 
 Main_Port : entityPort port map ( CLK, R4_Out(2), Write_Data, PortVal, inPort ,outPort);
 
-Module_SP : SPModule port map (MemWrite, SpSel, StackPointer, StackPointer, Sp );
+Module_SP : SPModule port map (Clk, Reset, MemWrite, SpSel, Sp);
 
 ----------------------------------------------------------------------------------------------------------------------------------
 --ID/EX Reg :-
@@ -355,6 +351,7 @@ CCR_Reset <= RstC or RstZ or RstN;
 CCR_Unit : entityCCR port map (Clk ,CCR_Reset , R2_Out(9), R2_Out(10), R2_Out(11), ALU_Cout, Zero, Neg, Overflow , CoutTempCCR, ZeroTempCCR, NegTempCCR, OverflowTempCCR ,CCR_Cout, CCR_Zero, CCR_Neg, CCR_Overflow);
 
 --TempCCR :-
+--Temp_CCR_Unit : entityCCR port map (Clk ,CCR_Reset , R2_Out(9), R2_Out(10), R2_Out(11), ALU_Cout, Zero, Neg, Overflow , CoutTempCCR, ZeroTempCCR, NegTempCCR, OverflowTempCCR ,CCR_Cout, CCR_Zero, CCR_Neg, CCR_Overflow);
 
 BM_Unit : BranchModule Port map(CCR_Cout, R2_Out(15), CCR_Zero, R2_Out(17), CCR_Neg, R2_Out(16), R2_Out(14), RstC, RstZ, RstN, PCSrc);
 
