@@ -5,12 +5,14 @@ use ieee.std_logic_arith;
 
 Entity Processor is
 port(	
-	Interrupt, Reset, Clk : in std_logic
-	--WriteData : in std_logic_vector(15 downto 0)
+	Interrupt, Reset, Clk : in std_logic;
+	inPort : in std_logic_vector(15 downto 0);
+	outPort : out std_logic_vector(15 downto 0)
     );
 end Processor;
 
 Architecture Pipelined_Processor of Processor is
+
 ----------------------------------------------------------------------------------------------------------------------------------
 --1)Components :-
 ------------------
@@ -115,7 +117,6 @@ End Component SPModule;
 ----------------------------------------------------------------------------------------------------------------------------------
 --2)Signals :-
 --------------
-
 --IF/ID Signals :-
 -------------------
 signal Int : std_logic;					-- 47
@@ -127,9 +128,9 @@ signal Rsrc : std_logic_vector(2 downto 0); 		-- 18:16
 signal Pc : std_logic_vector(15 downto 0); 		-- 15:0
 signal IF_ID : std_logic_vector(47 downto 0); 		-- 48 bits
 
-
 --ID/EX Signals :-
 -------------------
+signal MemRead : std_logic;				-- 129
 signal RegData1 : std_logic_vector(15 downto 0);	-- 128:113
 signal RegData2 : std_logic_vector(15 downto 0);	-- 112:97
 --signal Imm : std_logic_vector(15 downto 0);		-- 96:81
@@ -158,8 +159,7 @@ signal MemToReg : std_logic;				-- 3
 signal PortWrite : std_logic;				-- 2
 signal PcWrite : std_logic;				-- 1
 signal RegWrite : std_logic; 				-- 0
-signal ID_Ex : std_logic_vector(128 downto 0);		-- 129 bits
-
+signal ID_Ex : std_logic_vector(129 downto 0);		-- 130 bits
 
 --EX/Mem Signals :-
 --------------------
@@ -178,7 +178,6 @@ signal Result_PortVal : std_logic_vector(15 downto 0);	-- 74:59
 --signal RegWrite : std_logic;				-- 0
 signal Ex_Mem : std_logic_vector(74 downto 0);		-- 75 bits
 
-
 -- Mem/WB Signals :-
 ---------------------
 --signal PortVal : std_logic_vector(15 downto 0);	-- 38:23
@@ -195,15 +194,14 @@ signal Mem_WB : std_logic_vector(38 downto 0);		-- 39 bits
 ------------------------
 signal R1_En, R2_En, R3_En ,R4_En : std_logic;
 signal R1_In, R1_Out : std_logic_vector(47 downto 0);
-signal R2_In, R2_Out : std_logic_vector(128 downto 0);
+signal R2_In, R2_Out : std_logic_vector(129 downto 0);
 signal R3_In, R3_Out : std_logic_vector(74 downto 0);
 signal R4_In, R4_Out : std_logic_vector(38 downto 0);
 ----------------------------------------------------------------------------------------------------------------------------------
 --5)Stages Signals :-
 ---------------------
-
 --a)Fetch Signals :- "PC Module"
---------------------------------
+---------------------------------
 signal PCSrc, PCFreeze : std_logic;
 signal RdstVal, WriteData : std_logic_vector(15 downto 0);
 signal Flush_IfId : std_logic;
@@ -212,19 +210,38 @@ signal PC_Out : std_logic_vector (15 downto 0);
 
 --b)Decode Signals :- 
 ----------------------
-
+signal Reg_En : std_logic;
+signal ReadImm : std_logic;
+signal Flush : std_logic;
+signal Flushing : std_logic;
+signal StackPointer : std_logic_vector(15 downto 0);
 
 --c)Execute Signals :- 
 -----------------------
-
+signal ALUCode : std_logic_vector(3 downto 0);
+signal Input_A : std_logic_vector(15 downto 0);
+signal Input_B : std_logic_vector(15 downto 0);
+signal MUX_A : std_logic_vector (1 downto 0);
+signal MUX_B : std_logic_vector (1 downto 0);
+signal MUX_B_3 : std_logic_vector (15 downto 0);
+signal ALU_Cin : std_logic; 
+signal Result : std_logic_vector(15 downto 0); 
+signal ALU_Cout, Zero, Neg, Overflow : std_logic;
+signal CoutTempCCR, ZeroTempCCR, NegTempCCR, OverflowTempCCR : std_logic;
+signal CCR_Cout, CCR_Zero, CCR_Neg, CCR_Overflow : std_logic;
+signal RstC, RstZ, RstN, CCR_Reset : std_logic;
 
 --d)Memory Signals :- 
 ----------------------
-
+signal PCSig : std_logic_vector(15 downto 0);
+signal FA_Cout : std_logic;
+signal Mem_Address : std_logic_vector(15 downto 0);
+signal Data_Write_In : std_logic_vector(15 downto 0);
 
 --e)WriteBack Signals :- 
 -------------------------
-
+signal Write_Data : std_logic_vector(15 downto 0);
+signal Write_Reg : std_logic_vector(2 downto 0); 
 
 ----------------------------------------------------------------------------------------------------------------------------------
 
@@ -237,6 +254,7 @@ R1_En <= '1';
 R2_En <= '1';
 R3_En <= '1';
 R4_En <= '1';
+Reg_En <= '1';
 
 ----------------------------------------------------------------------------------------------------------------------------------
 --1)Fetch :-
@@ -250,7 +268,6 @@ Rdst <= Instruction(7 downto 5);
 Shift <= Instruction(3 downto 0);
 Int <= Interrupt;
 Pc <= PC_Out;
---Imm <= ;
 
 -----------------------------------------------------------------------------------------------------------------------------------
 --IF/ID Reg :-
@@ -269,41 +286,29 @@ R1: my_DFF generic map(n => 48) port map(Clk, Reset, R1_En, R1_In, R1_Out);
 --Rsrc <= R1_Out(18 downto 16);
 --Pc <= R1_Out(15 downto 0);
 
+Main_Reg : Registers port map ( Clk, Reset, R4_Out(0), Write_Reg,  Rsrc, Rdst ,RegData1 ,RegData2 ,Write_Data);
 
---RegData1 <= ;
---RegData2 <= ;
---Sp <= ;
---PortVal <= ;
---Jz <= ;
---Jn <= ;
---Jc <= ;
---Jmp <= ;
---ALUSrc <= ;
---ALUCin <= ;
---ClrC <= ;
---SetC <= ;
---WriteCcr <= ;
---PortSelect <= ;
---MemWrite <= ;
---SpSel <= ;
---CallSel <= ;
---MemPc <= ;
---MemToReg <= ;
---PortWrite <= ;
---PcWrite <= ;
---RegWrite <= ;
+Control_Unit: CU port map (R1_Out(46 downto 42), R1_Out(47), Jz, Jn, Jc, Jmp, ALUSrc, ALUCin, SetC, ClrC, MemWrite, MemRead, RegWrite, MemToReg, PortSelect, PortWrite, SpSel, PcWrite, MemPc, CallSel, WriteCcr, ReadImm );
 
+Hazard_Unit : HDU port map(R2_Out(129), R1_Out(21 downto 19), R2_Out(23 downto 21), Flush, PCFreeze);
+
+Flushing <= ReadImm or PCSrc or Flush;
+
+Main_Port : entityPort port map ( CLK, R4_Out(2), Write_Data, PortVal, inPort ,outPort);
+
+Module_SP : SPModule port map (MemWrite, SpSel, StackPointer, StackPointer, Sp );
 
 ----------------------------------------------------------------------------------------------------------------------------------
 --ID/EX Reg :-
 -----------------
 --ID_EX <= RegData1(15 downto 0) & RegData2(15 downto 0) & Imm(15 downto 0) & Pc(15 downto 0) & Sp(15 downto 0) & PortVal(15 downto 0) & Op(4 downto 0) &  Shift(3 downto 0) & Rdst(2 downto 0) & Rsrc(2 downto 0) & Jz & Jn & Jc & Jmp & ALUSrc & ALUCin & ClrC & SetC & WriteCcr & PortSelect & MemWrite & SpSel & CallSel & MemPc & MemToReg & PortWrite & PcWrite & RegWrite;
-ID_EX <= RegData1(15 downto 0) & RegData2(15 downto 0) & R1_Out(41 downto 26) & R1_Out(15 downto 0) & Sp(15 downto 0) & PortVal(15 downto 0) & R1_Out(46 downto 42) & R1_Out(25 downto 22) & R1_Out(21 downto 19) & R1_Out(18 downto 16) & Jz & Jn & Jc & Jmp & ALUSrc & ALUCin & ClrC & SetC & WriteCcr & PortSelect & MemWrite & SpSel & CallSel & MemPc & MemToReg & PortWrite & PcWrite & RegWrite;
+ID_EX <= MemRead & RegData1(15 downto 0) & RegData2(15 downto 0) & R1_Out(41 downto 26) & R1_Out(15 downto 0) & Sp(15 downto 0) & PortVal(15 downto 0) & R1_Out(46 downto 42) & R1_Out(25 downto 22) & R1_Out(21 downto 19) & R1_Out(18 downto 16) & Jz & Jn & Jc & Jmp & ALUSrc & ALUCin & ClrC & SetC & WriteCcr & PortSelect & MemWrite & SpSel & CallSel & MemPc & MemToReg & PortWrite & PcWrite & RegWrite;
 R2_In <= ID_EX;
-R2: my_DFF generic map(n => 129) port map(Clk, Reset, R2_En, R2_In, R2_Out);
+R2: my_DFF generic map(n => 130) port map(Clk, Reset, R2_En, R2_In, R2_Out);
 ----------------------------------------------------------------------------------------------------------------------------------
 --3)Execute :-
 ---------------
+--MemRead <= R2_Out(129);
 --RegData1 <= R2_Out(128 downto 113);
 --RegData2 <= R2_Out(112 downto 97);
 --Imm <= R2_Out(96 downto 81);	
@@ -316,7 +321,7 @@ R2: my_DFF generic map(n => 129) port map(Clk, Reset, R2_En, R2_In, R2_Out);
 --Rsrc <= R2_Out(20 downto 18);
 --Jz <= R2_Out(17);
 --Jn <= R2_Out(16);
---Jc <= R2_Out(14);
+--Jc <= R2_Out(15);
 --Jmp <= R2_Out(14);
 --ALUSrc <= R2_Out(13);
 --ALUCin <= R2_Out(12);
@@ -333,10 +338,28 @@ R2: my_DFF generic map(n => 129) port map(Clk, Reset, R2_En, R2_In, R2_Out);
 --PcWrite <= R2_Out(1);
 --RegWrite <= R2_Out(0);
 
+Forward_Unit : FU port map (R3_Out(10 downto 8), R2_Out(20 downto 18), R2_Out(23 downto 21), R4_Out(6 downto 4), R3_Out(0), R4_Out(0), MUX_A, MUX_B);
 
---Result_PortVal <=;
+Input_A <= Write_data when MUX_A = "00" else R3_Out(74 downto 59) when MUX_A = "01" else R2_Out(128 downto 113);
+
+MUX_B_3 <= R2_Out(96 downto 81) when R2_Out(13) = '0' else R2_Out(112 downto 97);
+Input_B <= Write_data when MUX_B = "00" else R3_Out(74 downto 59) when MUX_B = "01" else R2_Out(128 downto 113);
+
+ALU_Control : ALU_CU Port map ( R2_Out(32 downto 28), ALUCode, ALUCin);
+
+ALU_Cin <= R2_Out(12) and CCR_Cout;
+
+PipeLine_ALU : ALU port map (Input_A,Input_B, R2_Out(27 downto 24), ALU_Cin, ALUCode, Result, ALU_Cout, Zero, Neg, Overflow);
+
+CCR_Reset <= RstC or RstZ or RstN;
+CCR_Unit : entityCCR port map (Clk ,CCR_Reset , R2_Out(9), R2_Out(10), R2_Out(11), ALU_Cout, Zero, Neg, Overflow , CoutTempCCR, ZeroTempCCR, NegTempCCR, OverflowTempCCR ,CCR_Cout, CCR_Zero, CCR_Neg, CCR_Overflow);
+
+--TempCCR :-
+
+BM_Unit : BranchModule Port map(CCR_Cout, R2_Out(15), CCR_Zero, R2_Out(17), CCR_Neg, R2_Out(16), R2_Out(14), RstC, RstZ, RstN, PCSrc);
 
 
+Result_PortVal <= Result when R2_Out(8)='0' else R2_Out(48 downto 33);
 ----------------------------------------------------------------------------------------------------------------------------------
 --EX/Mem Reg :-
 -----------------
@@ -347,7 +370,7 @@ R3: my_DFF generic map(n => 75) port map(Clk, Reset, R3_En, R3_In, R3_Out);
 ----------------------------------------------------------------------------------------------------------------------------------
 --4)Memory :-
 --------------
---PortVal <= R3_Out(74 downto 59);
+--Result_PortVal <= R3_Out(74 downto 59);
 --RegData2 <= R3_Out(58 downto 43);
 --Pc <= R3_Out(42 downto 27);
 --Sp <= R3_Out(26 downto 11);
@@ -361,9 +384,12 @@ R3: my_DFF generic map(n => 75) port map(Clk, Reset, R3_En, R3_In, R3_Out);
 --PcWrite <= R3_Out(1);
 --RegWrite <= R3_Out(0);
 
+Mem_Address <= R3_Out(74 downto 59) when R3_Out(6)='0' else R3_Out(26 downto 11);
 
---ReadData <= ;
+PC_Adder: FA generic map(n => 16) port map(x"0000", R3_Out(42 downto 27), '1', PCSig, FA_Cout);
+Data_Write_In <= R3_Out(58 downto 43) when R3_Out(4)='0' else PCSig;
 
+Data_Memory : Memory generic map (n => 16 , m => 16)port map(Clk, R3_Out(7), Data_Write_In, ReadData, Mem_Address);
 
 ----------------------------------------------------------------------------------------------------------------------------------
 --Mem/WB Reg :-
@@ -383,7 +409,8 @@ R4: my_DFF generic map(n => 39) port map(Clk, Reset, R4_En, R4_In, R4_Out);
 --PcWrite <= R4_Out(1);
 --RegWrite <= R4_Out(0);
 
-
+Write_Reg <= R4_out(6 downto 4);
+Write_data <= R4_Out(22 downto 7) when R4_Out(3)= '0' else R4_Out(38 downto 23);
 
 ----------------------------------------------------------------------------------------------------------------------------------
 end Architecture Pipelined_Processor;
