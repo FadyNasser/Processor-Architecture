@@ -4,7 +4,7 @@ Use ieee.std_logic_1164.all;
 entity PCModule is
 port( 	Interrupt, Reset, Clk, PCSrc, CallSel, PCFreeze, PCWrite : in std_logic;
 	RdstVal, WriteData : in std_logic_vector(15 downto 0);
-	Flush_IfId : out std_logic;
+	Flush_IdEx : out std_logic;
 	Instruction, PC, Imm : out std_logic_vector (15 downto 0));
 end PCModule;
 
@@ -25,15 +25,21 @@ end component FA;
 
 
 	signal PCSig, NewPCSig, Instr, InstrBuffer : std_logic_vector(15 downto 0);
-	signal IsInterrupt, IsReset, IsImmediate, FA_Cout, Flush : std_logic;
+	signal IsInterrupt, IsReset, IsImmediate, FA_Cout, Flush, ImmFlush, NextFlush : std_logic;
 Begin	
 	InstrMem: Memory port map(Clk, '0', x"0000", Instr, PCSig(9 downto 0));
 	PCSig_Adder: FA generic map(n => 16) port map(x"0000", PCSig, '1', NewPCSig, FA_Cout);
 
 	process(Clk, Reset, Interrupt)
 	begin
-		if Flush = '1' and rising_edge(Clk) then
+	if rising_edge(Clk) then
+		if Flush = '1' then
 			Flush <= '0';
+
+		end if;
+
+		if NextFlush = '1' then
+			NextFlush <= '0';
 		end if;
 
 		if Reset = '1' then
@@ -49,21 +55,19 @@ Begin
 			Flush <= '1';
 
 		elsif Interrupt = '1' then
-			if rising_edge(Clk) then
-				PC <= PCSig;
-			end if;
+			PC <= PCSig;
 			PCSig <= x"0001";
 			IsInterrupt <= '1';
 		elsif IsInterrupt = '1' then 
 			PC <= Instr;
 			PCSig <= Instr;
 			IsInterrupt <= '0';
-			Flush <= '1';
+			NextFlush <= '1';
 		else
-			if rising_edge(Clk) and PCFreeze = '0' then
+			if PCFreeze = '0' then
 				if PCWrite = '1' then
 					PC <= WriteData;
-					PCSig <= WriteData;
+					PCSig <= WriteData;					
 				else
 					if CallSel = '0' then
 						if PCSrc = '0' then
@@ -81,25 +85,31 @@ Begin
 				end if;
 			end if;
 		end if;
-		
+	end if;
 	end process;
-	process(Clk) is
+	process(Clk, Reset) is
 	begin
 		if Reset = '1' then
 			IsImmediate <= '0';
+			ImmFlush <= '0';
 		elsif rising_edge(Clk) then
+			if ImmFlush = '1' then
+				ImmFlush <= '0';
+			end if;
+
 			if IsImmediate = '0' then
 				if Instr(15 downto 11) = "11011" or Instr(15 downto 11) = "11100" or Instr(15 downto 11) = "11101" then
 					IsImmediate <= '1';
 					InstrBuffer <= Instr;
+					ImmFlush <= '1';
 				end if;
-			else
+			elsif IsImmediate = '1' then
 				IsImmediate <= '0';
 			end if; 
 		end if;
 	end process;
 
-	Flush_IfId <= '1' when Flush = '1' or CallSel = '1' or PCSrc = '1' or Instr(15 downto 11) = "11011" or Instr(15 downto 11) = "11100" or Instr(15 downto 11) = "11101" else
+	Flush_IdEx <= '1' when Flush = '1' or CallSel = '1' or PCSrc = '1' or ImmFlush ='1' or NextFlush = '1' else
 		      '0'; 
 	Imm <= Instr when IsImmediate = '1' else x"0000";
 	Instruction <= InstrBuffer when IsImmediate = '1' else Instr;
