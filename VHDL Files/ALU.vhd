@@ -58,7 +58,11 @@ Begin
 			FC(15) when "10",
 			FD(15) when others;
 
-	with S(3 downto 2) select
-		Overflow <= Cin xor Cout;
+with S(3 downto 2) select
+		Overflow <= 	Cin xor CoutA	when "00",
+				Cin xor CoutB	when "01",
+				Cin xor CoutC	when "10",
+				Cin xor CoutD 	when "11",
+				'0' 	when others;
 
 end architecture ALU_Arch;
