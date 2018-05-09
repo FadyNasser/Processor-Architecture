@@ -41,6 +41,12 @@ CoutTempCCR, ZeroTempCCR, NegTempCCR, OvervlowTempCCR: in std_logic;
 Cout, Zero, Neg, Overflow: out std_logic);
 end Component entityCCR;
 
+Component entityTempCCR is
+port( Clk, WriteTempCCR: in std_logic;
+CoutCCR, ZeroCCR, NegCCR, OverflowCCR: in std_logic;
+Cout, Zero, Neg, Overflow: out std_logic);
+end Component entityTempCCR;
+
 Component CU is
 Port(
 OPCode	: in std_logic_vector(4 downto 0);
@@ -86,7 +92,7 @@ port( 	Interrupt, Reset, Clk, PCSrc, CallSel, PCFreeze, PCWrite : in std_logic;
 end Component PCModule;
 
 Component entityPort is
-port( Clk, PortWrite: in std_logic;
+port(PortWrite: in std_logic;
 RegValueIn: in std_logic_vector(15 downto 0);
 RegValueOut: out std_logic_vector(15 downto 0);
 inPort: in std_logic_vector(15 downto 0);
@@ -290,7 +296,7 @@ Hazard_Unit : HDU port map(R2_Out(129), R1_Out(21 downto 19), R2_Out(23 downto 2
 
 Flushing <= ReadImm or PCSrc or Flush;
 
-Main_Port : entityPort port map ( CLK, R4_Out(2), Write_Data, PortVal, inPort ,outPort);
+Main_Port : entityPort port map (R4_Out(2), Write_Data, PortVal, inPort ,outPort);
 
 Module_SP : SPModule port map (Clk, Reset, MemWrite, SpSel, Sp);
 
@@ -348,10 +354,18 @@ ALU_Cin <= R2_Out(12) and CCR_Cout;
 PipeLine_ALU : ALU port map (Input_A,Input_B, R2_Out(27 downto 24), ALU_Cin, ALUCode, Result, ALU_Cout, Zero, Neg, Overflow);
 
 CCR_Reset <= RstC or RstZ or RstN;
-CCR_Unit : entityCCR port map (Clk ,CCR_Reset , R2_Out(9), R2_Out(10), R2_Out(11), ALU_Cout, Zero, Neg, Overflow , CoutTempCCR, ZeroTempCCR, NegTempCCR, OverflowTempCCR ,CCR_Cout, CCR_Zero, CCR_Neg, CCR_Overflow);
 
---TempCCR :-
---Temp_CCR_Unit : entityCCR port map (Clk ,CCR_Reset , R2_Out(9), R2_Out(10), R2_Out(11), ALU_Cout, Zero, Neg, Overflow , CoutTempCCR, ZeroTempCCR, NegTempCCR, OverflowTempCCR ,CCR_Cout, CCR_Zero, CCR_Neg, CCR_Overflow);
+
+MainCCR : entityCCR port map(Clk, CCR_Reset, R2_Out(9), R2_Out(10), R2_Out(11), ALU_Cout, Zero, Neg, Overflow, CoutTempCCR, ZeroTempCCR, NegTempCCR, OverflowTempCCR, CCR_Cout, CCR_Zero, CCR_Neg, CCR_Overflow);
+--port( Clk, RST, WriteCCR, SETC, CLRC, CoutAlu, ZeroAlu, NegAlu, OverflowAlu: in std_logic;
+--CoutTempCCR, ZeroTempCCR, NegTempCCR, OverflowTempCCR: in std_logic;
+--Cout, Zero, Neg, Overflow: out std_logic);
+
+TempCCR : entityTempCCR port map (Clk, R1_Out(47), CCR_Cout, CCR_Zero, CCR_Neg, CCR_Overflow, CoutTempCCR, ZeroTempCCR, NegTempCCR, OverflowTempCCR);
+--port( Clk, WriteTempCCR: in std_logic;
+--CoutCCR, ZeroCCR, NegCCR, OverflowCCR: in std_logic;
+--Cout, Zero, Neg, Overflow: out std_logic);
+
 
 BM_Unit : BranchModule Port map(CCR_Cout, R2_Out(15), CCR_Zero, R2_Out(17), CCR_Neg, R2_Out(16), R2_Out(14), RstC, RstZ, RstN, PCSrc);
 
