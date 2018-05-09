@@ -9,7 +9,7 @@ Write_Data : in std_logic_vector(15 downto 0));
 end Registers;
 
 Architecture Registers_Arch of Registers is
-	Component my_DFF is
+	Component Reg is
 	Generic ( n : integer := 16);
 	port( Clk,Rst, En : in std_logic;
 	d : in std_logic_vector(n-1 downto 0);
@@ -19,14 +19,14 @@ end component;
 	signal R1_Out, R2_Out, R3_Out, R4_Out, R5_Out, R6_Out, R7_Out, R8_Out : std_logic_vector(15 downto 0);
 begin
 	
-	R1: my_DFF generic map(n => 16) port map(Clk, Rst, R1_En, Write_Data, R1_Out);
-	R2: my_DFF generic map(n => 16) port map(Clk, Rst, R2_En, Write_Data, R2_Out);
-	R3: my_DFF generic map(n => 16) port map(Clk, Rst, R3_En, Write_Data, R3_Out);
-	R4: my_DFF generic map(n => 16) port map(Clk, Rst, R4_En, Write_Data, R4_Out);
-	R5: my_DFF generic map(n => 16) port map(Clk, Rst, R5_En, Write_Data, R5_Out);
-	R6: my_DFF generic map(n => 16) port map(Clk, Rst, R6_En, Write_Data, R6_Out);
-	R7: my_DFF generic map(n => 16) port map(Clk, Rst, R7_En, Write_Data, R7_Out);
-	R8: my_DFF generic map(n => 16) port map(Clk, Rst, R8_En, Write_Data, R8_Out);
+	R1: Reg generic map(n => 16) port map(Clk, Rst, R1_En, Write_Data, R1_Out);
+	R2: Reg generic map(n => 16) port map(Clk, Rst, R2_En, Write_Data, R2_Out);
+	R3: Reg generic map(n => 16) port map(Clk, Rst, R3_En, Write_Data, R3_Out);
+	R4: Reg generic map(n => 16) port map(Clk, Rst, R4_En, Write_Data, R4_Out);
+	R5: Reg generic map(n => 16) port map(Clk, Rst, R5_En, Write_Data, R5_Out);
+	R6: Reg generic map(n => 16) port map(Clk, Rst, R6_En, Write_Data, R6_Out);
+	R7: Reg generic map(n => 16) port map(Clk, Rst, R7_En, Write_Data, R7_Out);
+	R8: Reg generic map(n => 16) port map(Clk, Rst, R8_En, Write_Data, R8_Out);
 
 	R1_En <= '1' when RegWrite = '1' and Write_Reg = "000" else '0';
 	R2_En <= '1' when RegWrite = '1' and Write_Reg = "001" else '0';
