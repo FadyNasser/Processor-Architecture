@@ -50,7 +50,7 @@ Begin
 				 (S(3 downto 2) = "01" and FB = x"0000") or
 				 (S(3 downto 2) = "10" and FC = x"0000") or
 				 (S(3 downto 2) = "11" and FD = x"0000") else
-			'0';
+				  '0';
 
 	with S(3 downto 2) select
 		Neg <= 	FA(15) when "00",
@@ -58,6 +58,7 @@ Begin
 			FC(15) when "10",
 			FD(15) when others;
 
-	--Overflow is still yet to be implemented!!
+	with S(3 downto 2) select
+		Overflow <= Cin xor Cout;
 
 end architecture ALU_Arch;
