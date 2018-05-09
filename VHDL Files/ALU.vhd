@@ -10,9 +10,11 @@ architecture ALU_Arch of ALU is
 
 Signal FA, FB, FC, FD : std_logic_vector(15 downto 0);
 Signal CoutA, CoutB, CoutC, CoutD : std_logic;
+Signal OF_A, OF_B, OF_C, OF_D : std_logic;
+signal checkoverflow1,checkoverflow2 : std_logic;
 
 component LU_PartA is
-port(A,B : in std_logic_vector(15 downto 0); Cin : in std_logic; S : in std_logic_vector(1 downto 0); F : out std_logic_vector(15 downto 0); Cout : out std_logic);
+port(A,B : in std_logic_vector(15 downto 0); Cin : in std_logic; S : in std_logic_vector(1 downto 0); F : out std_logic_vector(15 downto 0); Cout : out std_logic; Overflow : out std_logic);
 end component LU_PartA;
 
 component LU_PartB is
@@ -28,7 +30,7 @@ port(A, B : in std_logic_vector(15 downto 0); Shift : in std_logic_vector(3 down
 end component LU_PartD;
 
 Begin
-	PartA: LU_PartA port map(A, B, Cin, S(1 downto 0), FA, CoutA);
+	PartA: LU_PartA port map(A, B, Cin, S(1 downto 0), FA, CoutA, OF_A);
 	PartB: LU_PartB port map(A, B, Cin, S(1 downto 0), FB, CoutB);
 	PartC: LU_PartC port map(A, B, Shift, Cin, S(1 downto 0), FC, CoutC);
 	PartD: LU_PartD port map(A, B, Shift, Cin, S(1 downto 0), FD, CoutD);
@@ -58,11 +60,12 @@ Begin
 			FC(15) when "10",
 			FD(15) when others;
 
-with S(3 downto 2) select
-		Overflow <= 	Cin xor CoutA	when "00",
-				Cin xor CoutB	when "01",
-				Cin xor CoutC	when "10",
-				Cin xor CoutD 	when "11",
-				'0' 	when others;
+
+	checkoverflow1 <= '1' when A(15) = B(15) else '0';
+	checkoverflow2 <= '1' when FA(15) = not A(15) else '0';	
+
+	with S(3 downto 2) select
+		Overflow <= 	OF_A when "00",
+				'0' when others;
 
 end architecture ALU_Arch;
