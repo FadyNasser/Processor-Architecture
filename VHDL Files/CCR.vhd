@@ -3,7 +3,7 @@ use ieee.std_logic_1164.all;
 
 entity entityCCR is
 port( Clk, RST, WriteCCR, SETC, CLRC, CoutAlu, ZeroAlu, NegAlu, OverflowAlu: in std_logic;
-CoutTempCCR, ZeroTempCCR, NegTempCCR, OvervlowTempCCR: in std_logic;
+CoutTempCCR, ZeroTempCCR, NegTempCCR, OverflowTempCCR: in std_logic;
 Cout, Zero, Neg, Overflow: out std_logic);
 end entityCCR;
 
@@ -12,7 +12,7 @@ architecture archCCR of entityCCR is
 signal carryFlag, zeroFlag, negativeFlag, overflowFlag: std_logic;
 
 begin
-	process(Clk)
+	process(Clk, RST)
 		begin
 			if(RST = '1')
 				then
@@ -22,33 +22,28 @@ begin
 			    overflowFlag <= '0';
 				
 			
-			elsif(WriteCCR = '1')
-				then
+			elsif(rising_edge(Clk) ) then
 					if(SETC = '1') then
 						carryFlag <= '1';
 					elsif(CLRC = '1') then
 						carryFlag <= '0';
+					elsif(WriteCCR = '1') then
+  						 carryFlag <= CoutTempCCR;
+			  		  	 zeroFlag <= ZeroTempCCR;
+			 		  	 negativeFlag <= NegTempCCR;
+			  		  	 overflowFlag <= OverflowTempCCR;
 					else
-  					 carryFlag <= CoutTempCCR;
-			  		  zeroFlag <= ZeroTempCCR;
-			 		   negativeFlag <= NegTempCCR;
-			  		  overflowFlag <= OvervlowTempCCR;
-
-
-
-					end if;
-			
-			else
-			   carryFlag <= CoutAlu;
-			    zeroFlag <= ZeroAlu;
-			    negativeFlag <= NegAlu;
-			   overflowFlag <= OverflowAlu;	
+						carryFlag <= CoutAlu;
+					    zeroFlag <= ZeroAlu;
+					    negativeFlag <= NegAlu;
+			   			overflowFlag <= OverflowAlu;	
+					end if;			
 			end if;
+		
+		end process;
 		 Cout <= carryFlag;
 		 Zero<= zeroFlag;
 		 Neg <= negativeFlag;
      		Overflow <= overflowFlag;
-		end process;
-	
 end architecture archCCR;
 
