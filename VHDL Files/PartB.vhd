@@ -22,6 +22,6 @@ Begin
 		FA_In <= 	A and	B when "00",	--And
 				A or	B when "01",	--OR
 				A xor	B when "10",	--XOR
-			 	  not	A when others;	--NOT
+			 	  not	B when others;	--NOT
 
 end architecture LU_PartB_Arch;
