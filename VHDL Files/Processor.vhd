@@ -37,7 +37,7 @@ End Component BranchModule;
 
 Component entityCCR is
 port( Clk, RST, WriteCCR, SETC, CLRC, CoutAlu, ZeroAlu, NegAlu, OverflowAlu: in std_logic;
-CoutTempCCR, ZeroTempCCR, NegTempCCR, OvervlowTempCCR: in std_logic;
+CoutTempCCR, ZeroTempCCR, NegTempCCR, OverflowTempCCR: in std_logic;
 Cout, Zero, Neg, Overflow: out std_logic);
 end Component entityCCR;
 
