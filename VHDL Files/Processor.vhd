@@ -360,6 +360,8 @@ ALU_Cin <= (R2_Out(12) and '0') or Control_Cin;
 
 PipeLine_ALU : ALU port map (Input_A,Input_B, R2_Out(27 downto 24), ALU_Cin, ALUCode, Result, ALU_Cout, Zero, Neg, Overflow);
 
+RdstVal <= Result;
+
 CCR_Reset <= RstC or RstZ or RstN;
 
 MainCCR : entityCCR port map(Clk, CCR_Reset, R2_Out(9), R2_Out(10), R2_Out(11), ALU_Cout, Zero, Neg, Overflow, CoutTempCCR, ZeroTempCCR, NegTempCCR, OverflowTempCCR, CCR_Cout, CCR_Zero, CCR_Neg, CCR_Overflow);
