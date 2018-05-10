@@ -57,7 +57,7 @@ End Component CU;
 
 Component FU is
 port( 	ExMem_Rdst, IdEx_Rsrc, IdEx_Rdst, MemWB_Rdst : in std_logic_vector (2 downto 0);
-	ExMem_RegWrite, MemWB_RegWrite : in std_logic;
+	ExMem_RegWrite, MemWB_RegWrite, ExMem_MemRead, MemWB_MemRead, ExMem_NOP, MemWB_NOP : in std_logic;
 	MUX_A, MUX_B : out std_logic_vector(1 downto 0));
 end Component FU;
 
@@ -169,6 +169,8 @@ signal ID_Ex : std_logic_vector(130 downto 0);		-- 131 bits
 
 --EX/Mem Signals :-
 --------------------
+--signal OP : std_logic_vector(81 downto 77);		-- 81:77
+--signal ExMem_MemRead : std_logic;			-- 76
 --signal RTI_Flush : std_logic;				-- 75
 signal Result_PortVal : std_logic_vector(15 downto 0);	-- 74:59
 --signal RegData2 : std_logic_vector(15 downto 0);	-- 58:43
@@ -183,10 +185,12 @@ signal Result_PortVal : std_logic_vector(15 downto 0);	-- 74:59
 --signal PortWrite : std_logic;				-- 2
 --signal PcWrite : std_logic;				-- 1
 --signal RegWrite : std_logic;				-- 0
-signal Ex_Mem : std_logic_vector(75 downto 0);		-- 76 bits
+signal Ex_Mem : std_logic_vector(81 downto 0);		-- 82 bits
 
 -- Mem/WB Signals :-
 ---------------------
+--signal OP : std_logic_vector(45 downto 41);		-- 45:41
+--signal ExMem_MemRead : std_logic;			-- 40
 --signal RTI_Flush : std_logic;				-- 39
 --signal PortVal : std_logic_vector(15 downto 0);	-- 38:23
 signal ReadData : std_logic_vector(15 downto 0);	-- 22:7
@@ -195,7 +199,7 @@ signal ReadData : std_logic_vector(15 downto 0);	-- 22:7
 --signal PortWrite : std_logic;				-- 2
 --signal PcWrite : std_logic;				-- 1
 --signal RegWrite : std_logic;				-- 0
-signal Mem_WB : std_logic_vector(39 downto 0);		-- 40 bits
+signal Mem_WB : std_logic_vector(45 downto 0);		-- 46 bits
 
 ----------------------------------------------------------------------------------------------------------------------------------
 --4)Registers Signals :-
@@ -204,8 +208,8 @@ signal R1_En, R2_En, R3_En ,R4_En : std_logic;
 signal R1_Rst, R2_Rst, R3_Rst ,R4_Rst : std_logic;
 signal R1_In, R1_Out : std_logic_vector(47 downto 0);
 signal R2_In, R2_Out : std_logic_vector(130 downto 0);
-signal R3_In, R3_Out : std_logic_vector(75 downto 0);
-signal R4_In, R4_Out : std_logic_vector(39 downto 0);
+signal R3_In, R3_Out : std_logic_vector(81 downto 0);
+signal R4_In, R4_Out : std_logic_vector(45 downto 0);
 ----------------------------------------------------------------------------------------------------------------------------------
 --5)Stages Signals :-
 ---------------------
@@ -255,6 +259,8 @@ signal Write_Data : std_logic_vector(15 downto 0);
 signal Write_Reg : std_logic_vector(2 downto 0); 
 
 ----------------------------------------------------------------------------------------------------------------------------------
+
+signal ExMem_MemRead, MemWB_MemRead, ExMem_NOP, MemWB_NOP : std_logic;
 
 begin
 
@@ -347,7 +353,7 @@ R2_In <= ID_EX;
 --PcWrite <= R2_Out(1);
 --RegWrite <= R2_Out(0);
 
-Forward_Unit : FU port map (R3_Out(10 downto 8), R2_Out(20 downto 18), R2_Out(23 downto 21), R4_Out(6 downto 4), R3_Out(0), R4_Out(0), MUX_A, MUX_B);
+Forward_Unit : FU port map (R3_Out(10 downto 8), R2_Out(20 downto 18), R2_Out(23 downto 21), R4_Out(6 downto 4), R3_Out(0), R4_Out(0), ExMem_MemRead, MemWB_MemRead,ExMem_NOP, MemWB_NOP, MUX_A, MUX_B);
 
 Input_A <= Write_data when MUX_A = "00" else R3_Out(74 downto 59) when MUX_A = "01" else R2_Out(128 downto 113);
 
@@ -377,12 +383,16 @@ Result_PortVal <= Result when R2_Out(8)='0' else R2_Out(48 downto 33);
 --Ex_Mem <= PortVal(15 downto 0) & RegData2(15 downto 0) & Pc(15 downto 0) & Sp(15 downto 0) & Rdst(2 downto 0) & MemWrite & SpSel & CallSel & MemPc & MemToReg & PortWrite & PcWrite & RegWrite;
 R3_Rst <= Reset or R4_Out(39);
 
-R3: my_DFF generic map(n => 76) port map(Clk, R3_Rst, R3_En, R3_In, R3_Out);
-Ex_Mem <= R2_Out(130) & Result_PortVal & R2_Out(112 downto 97) & R2_Out(80 downto 65) & R2_Out(64 downto 49) & R2_Out(23 downto 21) & R2_Out(7) & R2_Out(6) & R2_Out(5) & R2_Out(4) & R2_Out(3) & R2_Out(2) & R2_Out(1) & R2_Out(0);
+R3: my_DFF generic map(n => 82) port map(Clk, R3_Rst, R3_En, R3_In, R3_Out);
+Ex_Mem <= R2_Out(32 downto 28) & R2_Out(129) & R2_Out(130) & Result_PortVal & R2_Out(112 downto 97) & R2_Out(80 downto 65) & R2_Out(64 downto 49) & R2_Out(23 downto 21) & R2_Out(7) & R2_Out(6) & R2_Out(5) & R2_Out(4) & R2_Out(3) & R2_Out(2) & R2_Out(1) & R2_Out(0);
 R3_In <= Ex_Mem;
+ExMem_MemRead <= R3_Out(76);
+ExMem_NOP <= '1' when  R3_Out(81 downto 77) = "00000" else '0';
 ----------------------------------------------------------------------------------------------------------------------------------
 --4)Memory :-
 --------------
+--Op <= R3_Out(81 downto 77);
+--MemRead <= R3_Out(76);
 --RTI_Flush <= R3_Out(75);
 --Result_PortVal <= R3_Out(74 downto 59);
 --RegData2 <= R3_Out(58 downto 43);
@@ -410,12 +420,16 @@ Data_Memory : Memory port map(Clk, R3_Out(7), Data_Write_In, ReadData, Mem_Addre
 --Mem_WB <= PortVal(15 downto 0) & ReadData(15 downto 0) & Rdst(2 downto 0) & MemToReg & PortWrite & PcWrite & RegWrite;
 R4_Rst <= Reset;
 
-R4: my_DFF generic map(n => 40) port map(Clk, R4_Rst, R4_En, R4_In, R4_Out);
-Mem_WB <= R3_Out(75) & R3_Out(74 downto 59) & ReadData & R3_Out(10 downto 8) & R3_Out(3) & R3_Out(2) & R3_Out(1) & R3_Out(0);
-R4_In <= Mem_WB;	
+R4: my_DFF generic map(n => 46) port map(Clk, R4_Rst, R4_En, R4_In, R4_Out);
+Mem_WB <= R3_Out(81 downto 77) & R3_Out(76) & R3_Out(75) & R3_Out(74 downto 59) & ReadData & R3_Out(10 downto 8) & R3_Out(3) & R3_Out(2) & R3_Out(1) & R3_Out(0);
+R4_In <= Mem_WB;
+MemWB_MemRead <= R4_Out(40);	
+MemWB_NOP <= '1' when  R4_Out(45 downto 41) = "00000" else '0';
 ----------------------------------------------------------------------------------------------------------------------------------
 --5)WriteBack :-
 -----------------
+--Op <= R3_Out(45 downto 41);
+--MemRead <= R4_Out(40);
 --RTI_Flush <= R4_Out(39);
 --PortVal <= R4_Out(38 downto 23);
 --ReadData <= R4_Out(22 downto 7);
